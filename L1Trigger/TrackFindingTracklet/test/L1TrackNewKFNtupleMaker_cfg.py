@@ -107,6 +107,8 @@ elif (L1TRKALGO == 'HYBRID'):
     process.dtc = cms.Sequence( process.TrackerDTCProducer )
     process.TTTracksEmulation = cms.Sequence(process.L1HybridTracks)
     process.TTTracksEmulationWithTruth = cms.Path(process.dtc + process.L1HybridTracksWithAssociators)
+    process.TrackQualityParams.ONNXmodel = cms.FileInPath("L1Trigger/TrackTrigger/data/OldKFTrack.onnx")
+    
     NHELIXPAR = 4
     L1TRK_NAME  = "TTTracksFromTrackletEmulation"
     L1TRK_LABEL = "Level1TTTracks"
