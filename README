@@ -1,1 +1,24 @@
 Introduction to CMSSW: http://cms-sw.github.io
+
+Recipe for building and running Ntuple maker for vertex finding:
+
+cmsrel CMSSW_12_0_0_pre4
+cd CMSSW_12_0_0_pre4/src/
+cmsenv 
+git cms-checkout-topic -u VTXNN:VertexNtuples
+
+git cms-addpkg L1Trigger/TrackFindingTracklet
+git cms-addpkg L1Trigger/TrackFindingTMTT
+git cms-addpkg L1Trigger/TrackerDTC
+git cms-addpkg L1Trigger/TrackerTFP
+git cms-addpkg L1Trigger/TrackTrigger
+git cms-addpkg DataFormats/L1TrackTrigger
+git cms-addpkg SimTracker/TrackTriggerAssociation
+
+scram b -j 8
+cd L1Trigger/TrackFindingTracklet/test/
+cmsRun L1TrackNewKFNtupleMaker_cfg.py
+
+Change L15 between 'HYBRID' (old KF) and 'NewKF' (new KF)
+
+Track Quality BDTs are included for both the old and new kf by default and the relevant BDT is loaded automatically
