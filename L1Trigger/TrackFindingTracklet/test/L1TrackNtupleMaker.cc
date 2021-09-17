@@ -124,6 +124,8 @@ private:
   edm::InputTag TrackingParticleInputTag;
   edm::InputTag TrackingVertexInputTag;
   edm::InputTag GenJetInputTag;
+  edm::InputTag GenParticleInputTag;
+  edm::InputTag GenVertexInputTag;
 
   edm::EDGetTokenT<edmNew::DetSetVector<TTCluster<Ref_Phase2TrackerDigi_> > > ttClusterToken_;
   edm::EDGetTokenT<edmNew::DetSetVector<TTStub<Ref_Phase2TrackerDigi_> > > ttStubToken_;
@@ -137,6 +139,8 @@ private:
   edm::EDGetTokenT<std::vector<TrackingVertex> > TrackingVertexToken_;
 
   edm::EDGetTokenT<std::vector<reco::GenJet> > GenJetToken_;
+  edm::EDGetTokenT<std::vector<reco::GenParticle> > GenParticleToken_;
+  edm::EDGetTokenT<HepMCProduct> GenVertexToken_;
 
   //-----------------------------------------------------------------------------------------------
   // tree & branches for mini-ntuple
@@ -144,6 +148,10 @@ private:
   bool available_;  // ROOT file for histograms is open.
 
   TTree* eventTree;
+
+  std::vector<float>* m_pv_HepMC;
+  std::vector<float>* m_pv_GenPart;
+  std::vector<float>* m_pv_TrackingVertex;
 
   // all L1 tracks
   std::vector<float>* m_trk_pt;
@@ -167,6 +175,7 @@ private:
   std::vector<int>* m_trk_combinatoric;
   std::vector<int>* m_trk_fake;  //0 fake, 1 track from primary interaction, 2 secondary track
   std::vector<float>* m_trk_MVA1;
+  std::vector<float>* m_trk_MVA2;
   std::vector<int>* m_trk_matchtp_pdgid;
   std::vector<float>* m_trk_matchtp_pt;
   std::vector<float>* m_trk_matchtp_eta;
@@ -177,6 +186,42 @@ private:
   std::vector<int>* m_trk_injet;          //is the track within dR<0.4 of a genjet with pt > 30 GeV?
   std::vector<int>* m_trk_injet_highpt;   //is the track within dR<0.4 of a genjet with pt > 100 GeV?
   std::vector<int>* m_trk_injet_vhighpt;  //is the track within dR<0.4 of a genjet with pt > 200 GeV?
+
+  std::vector<float>* m_KFtrk_inv2R;
+  std::vector<float>* m_KFtrk_cot;
+  std::vector<float>* m_KFtrk_zT;
+  std::vector<float>* m_KFtrk_phiT;
+  std::vector<float>* m_KFtrk_match;
+  std::vector<float>* m_KFtrk_etasector;
+  std::vector<float>* m_KFtrk_phisector;
+
+  std::vector<float>* m_KFtrk_r1;
+  std::vector<float>* m_KFtrk_phi1;
+  std::vector<float>* m_KFtrk_z1;
+  std::vector<float>* m_KFtrk_dPhi1;
+  std::vector<float>* m_KFtrk_dZ1;
+  std::vector<float>* m_KFtrk_layer1;
+
+  std::vector<float>* m_KFtrk_r2;
+  std::vector<float>* m_KFtrk_phi2;
+  std::vector<float>* m_KFtrk_z2;
+  std::vector<float>* m_KFtrk_dPhi2;
+  std::vector<float>* m_KFtrk_dZ2;
+  std::vector<float>* m_KFtrk_layer2;
+
+  std::vector<float>* m_KFtrk_r3;
+  std::vector<float>* m_KFtrk_phi3;
+  std::vector<float>* m_KFtrk_z3;
+  std::vector<float>* m_KFtrk_dPhi3;
+  std::vector<float>* m_KFtrk_dZ3;
+  std::vector<float>* m_KFtrk_layer3;
+
+  std::vector<float>* m_KFtrk_r4;
+  std::vector<float>* m_KFtrk_phi4;
+  std::vector<float>* m_KFtrk_z4;
+  std::vector<float>* m_KFtrk_dPhi4;
+  std::vector<float>* m_KFtrk_dZ4;
+  std::vector<float>* m_KFtrk_layer4;
 
   // all tracking particles
   std::vector<float>* m_tp_pt;
@@ -207,6 +252,7 @@ private:
   std::vector<float>* m_matchtrk_chi2rz;
   std::vector<float>* m_matchtrk_bendchi2;
   std::vector<float>* m_matchtrk_MVA1;
+  std::vector<float>* m_matchtrk_MVA2;
   std::vector<int>* m_matchtrk_nstub;
   std::vector<int>* m_matchtrk_lhits;
   std::vector<int>* m_matchtrk_dhits;
@@ -278,6 +324,8 @@ L1TrackNtupleMaker::L1TrackNtupleMaker(edm::ParameterSet const& iConfig) : confi
   TrackingParticleInputTag = iConfig.getParameter<edm::InputTag>("TrackingParticleInputTag");
   TrackingVertexInputTag = iConfig.getParameter<edm::InputTag>("TrackingVertexInputTag");
   GenJetInputTag = iConfig.getParameter<edm::InputTag>("GenJetInputTag");
+  GenParticleInputTag   = iConfig.getParameter<InputTag >("GenParticleInputTag");
+  GenVertexInputTag   = iConfig.getParameter<InputTag >("GenVertexInputTag");
 
   ttTrackToken_ = consumes<std::vector<TTTrack<Ref_Phase2TrackerDigi_> > >(L1TrackInputTag);
   ttTrackMCTruthToken_ = consumes<TTTrackAssociationMap<Ref_Phase2TrackerDigi_> >(MCTruthTrackInputTag);
@@ -288,6 +336,8 @@ L1TrackNtupleMaker::L1TrackNtupleMaker(edm::ParameterSet const& iConfig) : confi
   TrackingParticleToken_ = consumes<std::vector<TrackingParticle> >(TrackingParticleInputTag);
   TrackingVertexToken_ = consumes<std::vector<TrackingVertex> >(TrackingVertexInputTag);
   GenJetToken_ = consumes<std::vector<reco::GenJet> >(GenJetInputTag);
+  GenParticleToken_=consumes< std::vector< reco::GenParticle> >(GenParticleInputTag);
+  GenVertexToken_ = consumes<HepMCProduct>(GenVertexInputTag);
 }
 
 /////////////
@@ -336,6 +386,7 @@ void L1TrackNtupleMaker::beginJob() {
   m_trk_combinatoric = new std::vector<int>;
   m_trk_fake = new std::vector<int>;
   m_trk_MVA1 = new std::vector<float>;
+  m_trk_MVA2 = new std::vector<float>;
   m_trk_matchtp_pdgid = new std::vector<int>;
   m_trk_matchtp_pt = new std::vector<float>;
   m_trk_matchtp_eta = new std::vector<float>;
@@ -346,6 +397,42 @@ void L1TrackNtupleMaker::beginJob() {
   m_trk_injet = new std::vector<int>;
   m_trk_injet_highpt = new std::vector<int>;
   m_trk_injet_vhighpt = new std::vector<int>;
+
+  m_KFtrk_inv2R = new std::vector<float>;
+  m_KFtrk_cot = new std::vector<float>;
+  m_KFtrk_zT = new std::vector<float>;
+  m_KFtrk_phiT = new std::vector<float>;
+  m_KFtrk_match = new std::vector<float>;
+  m_KFtrk_etasector = new std::vector<float>;
+  m_KFtrk_phisector = new std::vector<float>;
+
+  m_KFtrk_r1 = new std::vector<float>;
+  m_KFtrk_phi1 = new std::vector<float>;
+  m_KFtrk_z1 = new std::vector<float>;
+  m_KFtrk_dPhi1 = new std::vector<float>;
+  m_KFtrk_dZ1 = new std::vector<float>;
+  m_KFtrk_layer1 = new std::vector<float>;
+
+  m_KFtrk_r2 = new std::vector<float>;
+  m_KFtrk_phi2 = new std::vector<float>;
+  m_KFtrk_z2 = new std::vector<float>;
+  m_KFtrk_dPhi2 = new std::vector<float>;
+  m_KFtrk_dZ2 = new std::vector<float>;
+  m_KFtrk_layer2 = new std::vector<float>;
+
+  m_KFtrk_r3 = new std::vector<float>;
+  m_KFtrk_phi3 = new std::vector<float>;
+  m_KFtrk_z3 = new std::vector<float>;
+  m_KFtrk_dPhi3 = new std::vector<float>;
+  m_KFtrk_dZ3 = new std::vector<float>;
+  m_KFtrk_layer3 = new std::vector<float>;
+
+  m_KFtrk_r4 = new std::vector<float>;
+  m_KFtrk_phi4 = new std::vector<float>;
+  m_KFtrk_z4 = new std::vector<float>;
+  m_KFtrk_dPhi4 = new std::vector<float>;
+  m_KFtrk_dZ4 = new std::vector<float>;
+  m_KFtrk_layer4 = new std::vector<float>;
 
   m_tp_pt = new std::vector<float>;
   m_tp_eta = new std::vector<float>;
@@ -374,6 +461,7 @@ void L1TrackNtupleMaker::beginJob() {
   m_matchtrk_chi2rz = new std::vector<float>;
   m_matchtrk_bendchi2 = new std::vector<float>;
   m_matchtrk_MVA1 = new std::vector<float>;
+  m_matchtrk_MVA2 = new std::vector<float>;
   m_matchtrk_nstub = new std::vector<int>;
   m_matchtrk_dhits = new std::vector<int>;
   m_matchtrk_lhits = new std::vector<int>;
@@ -409,6 +497,10 @@ void L1TrackNtupleMaker::beginJob() {
   m_jet_trk_sumpt = new std::vector<float>;
   m_jet_matchtrk_sumpt = new std::vector<float>;
 
+  m_pv_HepMC = new std::vector<float>;
+  m_pv_GenPart = new std::vector<float>;
+  m_pv_TrackingVertex = new std::vector<float>;
+
   // ntuple
   eventTree = fs->make<TTree>("eventTree", "Event tree");
 
@@ -434,6 +526,7 @@ void L1TrackNtupleMaker::beginJob() {
     eventTree->Branch("trk_combinatoric", &m_trk_combinatoric);
     eventTree->Branch("trk_fake", &m_trk_fake);
     eventTree->Branch("trk_MVA1", &m_trk_MVA1);
+    eventTree->Branch("trk_MVA2", &m_trk_MVA2);
     eventTree->Branch("trk_matchtp_pdgid", &m_trk_matchtp_pdgid);
     eventTree->Branch("trk_matchtp_pt", &m_trk_matchtp_pt);
     eventTree->Branch("trk_matchtp_eta", &m_trk_matchtp_eta);
@@ -446,7 +539,45 @@ void L1TrackNtupleMaker::beginJob() {
       eventTree->Branch("trk_injet_highpt", &m_trk_injet_highpt);
       eventTree->Branch("trk_injet_vhighpt", &m_trk_injet_vhighpt);
     }
+
+    eventTree->Branch("KFtrk_inv2R",&m_KFtrk_inv2R);
+    eventTree->Branch("KFtrk_cot",&m_KFtrk_cot);
+    eventTree->Branch("KFtrk_zT",&m_KFtrk_zT);
+    eventTree->Branch("KFtrk_phiT",&m_KFtrk_phiT);
+    eventTree->Branch("KFtrk_match",&m_KFtrk_match);
+    eventTree->Branch("KFtrk_etasector",&m_KFtrk_etasector);
+    eventTree->Branch("KFtrk_phisector",&m_KFtrk_phisector);
+
+    eventTree->Branch("KFtrk_r1",&m_KFtrk_r1);
+    eventTree->Branch("KFtrk_phi1",&m_KFtrk_phi1);
+    eventTree->Branch("KFtrk_z1",&m_KFtrk_z1);
+    eventTree->Branch("KFtrk_dPhi1",&m_KFtrk_dPhi1);
+    eventTree->Branch("KFtrk_dZ1",&m_KFtrk_dZ1);
+    eventTree->Branch("KFtrk_layer1",&m_KFtrk_layer1);
+
+    eventTree->Branch("KFtrk_r2",&m_KFtrk_r2);
+    eventTree->Branch("KFtrk_phi2",&m_KFtrk_phi2);
+    eventTree->Branch("KFtrk_z2",&m_KFtrk_z2);
+    eventTree->Branch("KFtrk_dPhi2",&m_KFtrk_dPhi2);
+    eventTree->Branch("KFtrk_dZ2",&m_KFtrk_dZ2);
+    eventTree->Branch("KFtrk_layer2",&m_KFtrk_layer2);
+
+    eventTree->Branch("KFtrk_r3",&m_KFtrk_r3);
+    eventTree->Branch("KFtrk_phi3",&m_KFtrk_phi3);
+    eventTree->Branch("KFtrk_z3",&m_KFtrk_z3);
+    eventTree->Branch("KFtrk_dPhi3",&m_KFtrk_dPhi3);
+    eventTree->Branch("KFtrk_dZ3",&m_KFtrk_dZ3);
+    eventTree->Branch("KFtrk_layer3",&m_KFtrk_layer3);
+
+    eventTree->Branch("KFtrk_r4",&m_KFtrk_r4);
+    eventTree->Branch("KFtrk_phi4",&m_KFtrk_phi4);
+    eventTree->Branch("KFtrk_z4",&m_KFtrk_z4);
+    eventTree->Branch("KFtrk_dPhi4",&m_KFtrk_dPhi4);
+    eventTree->Branch("KFtrk_dZ4",&m_KFtrk_dZ4);
+    eventTree->Branch("KFtrk_layer4",&m_KFtrk_layer4);
   }
+
+
 
   eventTree->Branch("tp_pt", &m_tp_pt);
   eventTree->Branch("tp_eta", &m_tp_eta);
@@ -477,6 +608,7 @@ void L1TrackNtupleMaker::beginJob() {
   eventTree->Branch("matchtrk_chi2rz", &m_matchtrk_chi2rz);
   eventTree->Branch("matchtrk_bendchi2", &m_matchtrk_bendchi2);
   eventTree->Branch("matchtrk_MVA1", &m_matchtrk_MVA1);
+  eventTree->Branch("matchtrk_MVA2", &m_matchtrk_MVA2);
   eventTree->Branch("matchtrk_nstub", &m_matchtrk_nstub);
   eventTree->Branch("matchtrk_lhits", &m_matchtrk_lhits);
   eventTree->Branch("matchtrk_dhits", &m_matchtrk_dhits);
@@ -518,6 +650,10 @@ void L1TrackNtupleMaker::beginJob() {
     eventTree->Branch("jet_trk_sumpt", &m_jet_trk_sumpt);
     eventTree->Branch("jet_matchtrk_sumpt", &m_jet_matchtrk_sumpt);
   }
+
+  eventTree->Branch("m_pv_HepMC",&m_pv_HepMC);
+  eventTree->Branch("m_pv_GenPart",&m_pv_GenPart);
+  //eventTree->Branch("m_pv_TrackingVertex",&m_pv_TrackingVertex);
 }
 
 //////////
@@ -561,6 +697,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
     m_trk_combinatoric->clear();
     m_trk_fake->clear();
     m_trk_MVA1->clear();
+    m_trk_MVA2->clear();
     m_trk_matchtp_pdgid->clear();
     m_trk_matchtp_pt->clear();
     m_trk_matchtp_eta->clear();
@@ -571,6 +708,42 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
     m_trk_injet->clear();
     m_trk_injet_highpt->clear();
     m_trk_injet_vhighpt->clear();
+
+    m_KFtrk_inv2R->clear();
+    m_KFtrk_cot->clear();
+    m_KFtrk_zT->clear();
+    m_KFtrk_phiT->clear();
+    m_KFtrk_match->clear();
+    m_KFtrk_etasector->clear();
+    m_KFtrk_phisector->clear();
+
+    m_KFtrk_r1->clear();
+    m_KFtrk_phi1->clear();
+    m_KFtrk_z1->clear();
+    m_KFtrk_dPhi1->clear();
+    m_KFtrk_dZ1->clear();
+    m_KFtrk_layer1->clear();
+
+    m_KFtrk_r2->clear();
+    m_KFtrk_phi2->clear();
+    m_KFtrk_z2->clear();
+    m_KFtrk_dPhi2->clear();
+    m_KFtrk_dZ2->clear();
+    m_KFtrk_layer2->clear();
+
+    m_KFtrk_r3->clear();
+    m_KFtrk_phi3->clear();
+    m_KFtrk_z3->clear();
+    m_KFtrk_dPhi3->clear();
+    m_KFtrk_dZ3->clear();
+    m_KFtrk_layer3->clear();
+
+    m_KFtrk_r4->clear();
+    m_KFtrk_phi4->clear();
+    m_KFtrk_z4->clear();
+    m_KFtrk_dPhi4->clear();
+    m_KFtrk_dZ4->clear();
+    m_KFtrk_layer4->clear();
   }
 
   m_tp_pt->clear();
@@ -600,6 +773,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
   m_matchtrk_chi2rz->clear();
   m_matchtrk_bendchi2->clear();
   m_matchtrk_MVA1->clear();
+  m_matchtrk_MVA2->clear();
   m_matchtrk_nstub->clear();
   m_matchtrk_lhits->clear();
   m_matchtrk_dhits->clear();
@@ -638,6 +812,10 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
   m_jet_trk_sumpt->clear();
   m_jet_matchtrk_sumpt->clear();
 
+  m_pv_HepMC->clear();
+  m_pv_GenPart->clear();
+  m_pv_TrackingVertex->clear();
+
   // -----------------------------------------------------------------------------------------------
   // retrieve various containers
   // -----------------------------------------------------------------------------------------------
@@ -665,6 +843,12 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
   iEvent.getByToken(TrackingParticleToken_, TrackingParticleHandle);
   iEvent.getByToken(TrackingVertexToken_, TrackingVertexHandle);
 
+  edm::Handle<HepMCProduct> GenVertexHandle;
+  iEvent.getByToken(GenVertexToken_, GenVertexHandle);
+
+  edm::Handle< std::vector< reco::GenParticle> > GenParticleHandle;
+  iEvent.getByToken(GenParticleToken_,GenParticleHandle);
+
   // -----------------------------------------------------------------------------------------------
   // more for TTStubs
   edm::ESHandle<TrackerGeometry> geometryHandle;
@@ -681,6 +865,61 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
 
   const TrackerTopology* const tTopo = tTopoHandle.product();
   const TrackerGeometry* const theTrackerGeom = tGeomHandle.product();
+
+  //Loop over gen particles
+  if (GenParticleHandle.isValid()) {
+      vector<reco::GenParticle>::const_iterator genpartIter;
+      float zvtx_gen = -999;
+      for (genpartIter = GenParticleHandle->begin(); genpartIter != GenParticleHandle->end(); ++genpartIter) {
+        int status = genpartIter -> status();
+        if (status!=1) continue;
+        if (genpartIter->numberOfMothers() == 0) continue;
+        if (genpartIter->isPromptFinalState() == false) continue;
+        zvtx_gen = genpartIter -> vz();
+      }
+      
+      m_pv_GenPart->push_back(zvtx_gen);
+    }
+
+  if (GenVertexHandle.isValid()) {
+    const HepMC::GenEvent* MCEvt = GenVertexHandle->GetEvent();
+    for (HepMC::GenEvent::vertex_const_iterator ivertex =
+             MCEvt->vertices_begin();
+         ivertex != MCEvt->vertices_end(); ++ivertex) {
+      bool hasParentVertex = false;
+      // Loop over the parents looking to see if they are coming from a
+      // production vertex
+      for (HepMC::GenVertex::particle_iterator iparent =
+               (*ivertex)->particles_begin(HepMC::parents);
+           iparent != (*ivertex)->particles_end(HepMC::parents); ++iparent)
+        if ((*iparent)->production_vertex()) {
+          hasParentVertex = true;
+          break;
+        }
+
+      // Reject those vertices with parent vertices
+      if (hasParentVertex) continue;
+      // Get the position of the vertex
+      HepMC::FourVector pos = (*ivertex)->position();
+      const double mm = 0.1;  // [mm] --> [cm]
+      m_pv_HepMC->push_back(pos.z() * mm);
+      break;  // there should be one single primary vertex
+    }         // end loop over gen vertices
+  }
+  
+  if (TrackingVertexHandle.isValid()) {
+    int this_tv = 0;
+    std::vector<TrackingVertex>::const_iterator iterTV;
+    for (iterTV = TrackingVertexHandle->begin(); iterTV != TrackingVertexHandle->end(); ++iterTV) {
+      edm::Ptr<TrackingVertex> tp_ptr(TrackingVertexHandle, this_tv);
+      this_tv++;
+      int tmp_Veventid = iterTV->eventId().event();
+      if (tmp_Veventid > 0)
+        continue;
+
+      //m_pv_TrackingVertex->push_back(iterTV->position().z());
+    }
+  }
 
   // ----------------------------------------------------------------------------------------------
   // loop over L1 stubs
@@ -877,6 +1116,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
       float tmp_trk_chi2rz = iterL1Track->chi2Z();
       float tmp_trk_bendchi2 = iterL1Track->stubPtConsistency();
       float tmp_trk_MVA1 = iterL1Track->trkMVA1();
+      float tmp_trk_MVA2 = iterL1Track->trkMVA2();
 
       std::vector<edm::Ref<edmNew::DetSetVector<TTStub<Ref_Phase2TrackerDigi_> >, TTStub<Ref_Phase2TrackerDigi_> > >
           stubRefs = iterL1Track->getStubRefs();
@@ -970,6 +1210,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
       m_trk_chi2rz->push_back(tmp_trk_chi2rz);
       m_trk_bendchi2->push_back(tmp_trk_bendchi2);
       m_trk_MVA1->push_back(tmp_trk_MVA1);
+      m_trk_MVA2->push_back(tmp_trk_MVA2);
       m_trk_nstub->push_back(tmp_trk_nstub);
       m_trk_dhits->push_back(tmp_trk_dhits);
       m_trk_lhits->push_back(tmp_trk_lhits);
@@ -980,6 +1221,42 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
       m_trk_loose->push_back(tmp_trk_loose);
       m_trk_unknown->push_back(tmp_trk_unknown);
       m_trk_combinatoric->push_back(tmp_trk_combinatoric);
+
+      m_KFtrk_inv2R->push_back(iterL1Track->KFTrack().at(0));
+      m_KFtrk_cot->push_back(iterL1Track->KFTrack().at(1));
+      m_KFtrk_zT->push_back(iterL1Track->KFTrack().at(2));
+      m_KFtrk_phiT->push_back(iterL1Track->KFTrack().at(3));
+      m_KFtrk_match->push_back(iterL1Track->KFTrack().at(4));
+      m_KFtrk_etasector->push_back(iterL1Track->KFTrack().at(5));
+      m_KFtrk_phisector->push_back(iterL1Track->KFTrack().at(6));
+
+      m_KFtrk_r1->push_back(iterL1Track->KFTrack().at(7));
+      m_KFtrk_phi1->push_back(iterL1Track->KFTrack().at(8));
+      m_KFtrk_z1->push_back(iterL1Track->KFTrack().at(9));
+      m_KFtrk_dPhi1->push_back(iterL1Track->KFTrack().at(10));
+      m_KFtrk_dZ1->push_back(iterL1Track->KFTrack().at(11));
+      m_KFtrk_layer1->push_back(iterL1Track->KFTrack().at(12));
+
+      m_KFtrk_r2->push_back(iterL1Track->KFTrack().at(13));
+      m_KFtrk_phi2->push_back(iterL1Track->KFTrack().at(14));
+      m_KFtrk_z2->push_back(iterL1Track->KFTrack().at(15));
+      m_KFtrk_dPhi2->push_back(iterL1Track->KFTrack().at(16));
+      m_KFtrk_dZ2->push_back(iterL1Track->KFTrack().at(17));
+      m_KFtrk_layer2->push_back(iterL1Track->KFTrack().at(18));
+
+      m_KFtrk_r3->push_back(iterL1Track->KFTrack().at(19));
+      m_KFtrk_phi3->push_back(iterL1Track->KFTrack().at(20));
+      m_KFtrk_z3->push_back(iterL1Track->KFTrack().at(21));
+      m_KFtrk_dPhi3->push_back(iterL1Track->KFTrack().at(22));
+      m_KFtrk_dZ3->push_back(iterL1Track->KFTrack().at(23));
+      m_KFtrk_layer3->push_back(iterL1Track->KFTrack().at(24));
+
+      m_KFtrk_r4->push_back(iterL1Track->KFTrack().at(25));
+      m_KFtrk_phi4->push_back(iterL1Track->KFTrack().at(26));
+      m_KFtrk_z4->push_back(iterL1Track->KFTrack().at(27));
+      m_KFtrk_dPhi4->push_back(iterL1Track->KFTrack().at(28));
+      m_KFtrk_dZ4->push_back(iterL1Track->KFTrack().at(29));
+      m_KFtrk_layer4->push_back(iterL1Track->KFTrack().at(30));
 
       // ----------------------------------------------------------------------------------------------
       // for studying the fake rate
@@ -1362,6 +1639,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
     float tmp_matchtrk_chi2rz = -999;
     float tmp_matchtrk_bendchi2 = -999;
     float tmp_matchtrk_MVA1 = -999;
+    float tmp_matchtrk_MVA2 = -999;
     int tmp_matchtrk_nstub = -999;
     int tmp_matchtrk_dhits = -999;
     int tmp_matchtrk_lhits = -999;
@@ -1388,6 +1666,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
       tmp_matchtrk_chi2rz = matchedTracks.at(i_track)->chi2Z();
       tmp_matchtrk_bendchi2 = matchedTracks.at(i_track)->stubPtConsistency();
       tmp_matchtrk_MVA1 = matchedTracks.at(i_track)->trkMVA1();
+      tmp_matchtrk_MVA2 = matchedTracks.at(i_track)->trkMVA2();
       tmp_matchtrk_nstub = (int)matchedTracks.at(i_track)->getStubRefs().size();
       tmp_matchtrk_seed = (int)matchedTracks.at(i_track)->trackSeedType();
       tmp_matchtrk_hitpattern = (int)matchedTracks.at(i_track)->hitPattern();
@@ -1448,6 +1727,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
     m_matchtrk_chi2rz->push_back(tmp_matchtrk_chi2rz);
     m_matchtrk_bendchi2->push_back(tmp_matchtrk_bendchi2);
     m_matchtrk_MVA1->push_back(tmp_matchtrk_MVA1);
+    m_matchtrk_MVA2->push_back(tmp_matchtrk_MVA2);
     m_matchtrk_nstub->push_back(tmp_matchtrk_nstub);
     m_matchtrk_dhits->push_back(tmp_matchtrk_dhits);
     m_matchtrk_lhits->push_back(tmp_matchtrk_lhits);

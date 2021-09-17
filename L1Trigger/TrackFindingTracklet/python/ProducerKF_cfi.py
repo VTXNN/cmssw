@@ -1,4 +1,6 @@
 import FWCore.ParameterSet.Config as cms
+from L1Trigger.TrackTrigger.TrackQualityParams_cfi import *
+from L1Trigger.TrackTrigger.KFTrackQualityParams_cfi import *
 
 TrackFindingTrackletProducerKF_params = cms.PSet (
 
@@ -13,6 +15,10 @@ TrackFindingTrackletProducerKF_params = cms.PSet (
   BranchLostStubs      = cms.string  ( "StubLost"      ),                                        #
   BranchLostTracks     = cms.string  ( "TrackLost"     ),                                        #
   CheckHistory         = cms.bool    ( False ),                                                  # checks if input sample production is configured as current process
-  EnableTruncation     = cms.bool    ( True  )                                                   # enable emulation of truncation, lost stubs are filled in BranchLost
+  EnableTruncation     = cms.bool    ( True  ) ,
+  TrackQuality         = cms.bool    ( True ),
+  TrackQualityPSet     = cms.PSet    ( TrackQualityParams ),
+  KFTrackQualityPSet     = cms.PSet    ( KFTrackQualityParams )
+                                                  # enable emulation of truncation, lost stubs are filled in BranchLost
 
 )

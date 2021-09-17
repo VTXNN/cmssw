@@ -12,6 +12,8 @@
 
 #include "L1Trigger/TrackTrigger/interface/Setup.h"
 #include "L1Trigger/TrackerTFP/interface/DataFormats.h"
+#include "L1Trigger/TrackTrigger/interface/TrackQuality.h"
+#include "L1Trigger/TrackTrigger/interface/KFTrackQuality.h"
 
 #include <string>
 #include <numeric>
@@ -54,6 +56,13 @@ namespace trackFindingTracklet {
     const Setup* setup_;
     // helper class to extract structured data from TTDTC::Frames
     const DataFormats* dataFormats_;
+    //Track Quality BDT on Full TTTrack
+    bool trackQuality_;
+    edm::ParameterSet trackQualityParams;
+    std::unique_ptr<TrackQuality> trackQualityModel;
+
+    edm::ParameterSet KFtrackQualityParams;
+    std::unique_ptr<KFTrackQuality> KFtrackQualityModel;
   };
 
   ProducerTT::ProducerTT(const ParameterSet& iConfig) :
@@ -72,6 +81,13 @@ namespace trackFindingTracklet {
     // initial ES products
     setup_ = nullptr;
     dataFormats_ = nullptr;
+    trackQuality_ = iConfig.getParameter<bool>("TrackQuality");
+    if (trackQuality_) {
+      trackQualityParams = iConfig.getParameter<edm::ParameterSet>("TrackQualityPSet");
+      trackQualityModel = std::make_unique<TrackQuality>(trackQualityParams);
+      KFtrackQualityParams = iConfig.getParameter<edm::ParameterSet>("KFTrackQualityPSet");
+      KFtrackQualityModel = std::make_unique<KFTrackQuality>(KFtrackQualityParams);
+    }
   }
 
   void ProducerTT::beginRun(const Run& iRun, const EventSetup& iSetup) {
@@ -117,10 +133,52 @@ namespace trackFindingTracklet {
             if (frameStub.first.isNonnull())
               stubs.emplace_back(frameStub, dataFormats_, layer);
           }
+
           // convert track frame to kf track
           TrackKF track(frameTrack, dataFormats_);
+          vector<float> KFBDT(28);
+          vector<double> KFvector(31);
+          KFBDT[0] = floor((2*track.inv2R())/5.20424e-07);
+          KFBDT[1] = floor((2*track.cot())/0.000244141);
+          KFBDT[2] = floor((2*track.zT())/0.00999469);
+          KFBDT[3] = floor((2*track.phiT())/0.000340885);
+
+          KFvector[0] = track.inv2R();
+          KFvector[1] = track.cot();
+          KFvector[2] = track.zT();
+          KFvector[3] = track.phiT();
+          KFvector[4] = track.match();
+          KFvector[5] = track.sectorEta();
+          KFvector[6] = track.sectorPhi();
+
+          int stubnum = 0;
+          for (const StubKF& stub : stubs) {
+            KFBDT[3+6*stubnum+1] = floor(stub.r()/0.0399788);
+            KFBDT[3+6*stubnum+2] = floor(stub.phi()/4.26106e-05);
+            KFBDT[3+6*stubnum+3] = floor(stub.z()/0.0399788);
+            KFBDT[3+6*stubnum+4] = floor(stub.dPhi()/4.26106e-05);
+            KFBDT[3+6*stubnum+5] = floor(stub.dZ()/0.0399788);
+            KFBDT[3+6*stubnum+6] = stub.layer();
+
+            KFvector[6+6*stubnum+1] = stub.r();
+            KFvector[6+6*stubnum+2] = stub.phi();
+            KFvector[6+6*stubnum+3] = stub.z();
+            KFvector[6+6*stubnum+4] = stub.dPhi();
+            KFvector[6+6*stubnum+5] = stub.dZ();
+            KFvector[6+6*stubnum+6] = stub.layer();
+            stubnum++;
+          }
+
           // convert kf track and kf stubs to TTTrack
-          ttTracks.emplace_back(track.ttTrack(stubs));
+          TTTrack<Ref_Phase2TrackerDigi_> FullTrack = track.ttTrack(stubs);
+          float MVA2 = -999;
+          if (trackQuality_) {
+            trackQualityModel->setTrackQuality(FullTrack);
+            MVA2 = KFtrackQualityModel->setKFTrackQuality(KFBDT);
+          }
+          FullTrack.settrkMVA2(MVA2);
+          FullTrack.setKFTrack(KFvector);
+          ttTracks.emplace_back(FullTrack);
           iTrk++;
         }
       }

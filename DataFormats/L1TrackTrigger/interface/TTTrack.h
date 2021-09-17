@@ -54,6 +54,7 @@ private:
   static constexpr unsigned int Npars5 = 5;
   static constexpr float MagConstant =
       CLHEP::c_light / 1.0E3;  //constant is 0.299792458; who knew c_light was in mm/ns?
+  std::vector<double> theKFTrack_ = std::vector<double>(31);
 
 public:
   /// Constructors
@@ -127,6 +128,8 @@ public:
   void settrkMVA2(double atrkMVA2);
   double trkMVA3() const;
   void settrkMVA3(double atrkMVA3);
+  std::vector<double> KFTrack() const;
+  void setKFTrack( std::vector<double> aKFTrack);
 
   /// Phi Sector
   unsigned int phiSector() const { return thePhiSector_; }
@@ -198,6 +201,7 @@ TTTrack<T>::TTTrack() {
   theChi2_Z_ = 0.0;
   theStubPtConsistency_ = 0.0;
   theNumFitPars_ = 0;
+  theKFTrack_ = std::vector<double>(31,0);
 }
 
 /// Meant to be default constructor
@@ -236,6 +240,7 @@ TTTrack<T>::TTTrack(double aRinv,
   theBField_ = aBfield;
   theChi2_XY_ = -999.;
   theChi2_Z_ = -999.;
+  theKFTrack_ = std::vector<double>(31,0);
 }
 
 /// Second default constructor with split chi2
@@ -389,6 +394,17 @@ double TTTrack<T>::trkMVA3() const {
 template <typename T>
 void TTTrack<T>::settrkMVA3(double atrkMVA3) {
   theTrkMVA3_ = atrkMVA3;
+  return;
+}
+
+template <typename T>
+std::vector<double> TTTrack<T>::KFTrack() const {
+  return theKFTrack_;
+}
+
+template <typename T>
+void TTTrack<T>::setKFTrack(std::vector<double> aKFTrack) {
+  theKFTrack_ = aKFTrack;
   return;
 }
 
